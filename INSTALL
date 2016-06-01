@@ -1,19 +1,19 @@
-1 - Altera as VARIAVEIS GLOBAIS conforme necessario
+1 - Altera as VARIÁVEIS GLOBAIS conforme necessário
 
-3 - Dê permissão de execução ao script
+2 - Dê permissão de execução ao script
 
 chmod 755 rrd_network.sh
 
-2 - Execute o script para gerar as bases de dados
+3 - Execute o script para gerar as bases de dados
 
 ./rrd_network.sh
 
-3 - Execute novamente o script, mas agora para gerar as paginas .html
+4 - Execute novamente o script, mas agora para gerar as páginas .html
 
 ./rrd_network.sh --html
 
-4 - Agende no cron do usuario root a execucao do mesmo (de 5 em 5 min.)
+5 - Agende no cron do usuário root a execução do mesmo de 5 em 5 min.
 
 */5 * * * * /caminho/para/rrd_network.sh > /dev/null 2>&1
 
-5 - Acesse as paginas .html geradas atraves dum navegador web
+6 - Acesse as páginas .html geradas através dum navegador web
