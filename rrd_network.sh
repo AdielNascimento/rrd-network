@@ -195,7 +195,7 @@ function gerarHTML {
 		</div>
 		<div id="content">
 			$(for i in ${ifaces[@]}; do
-				echo "<div><a href="\"${i}.html\""><img src="\"${i}_day.png\"" alt="\"${0##*/} --html\"" /></a></div>"
+				echo "<div><a href="\"${i}.html\"" title="\"Clique para mais detalhes.\""><img src="\"${i}_day.png\"" alt="\"${0##*/} --html\"" /></a></div>"
 			done)
 		</div>
 		<div id="footer">
