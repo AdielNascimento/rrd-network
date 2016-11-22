@@ -195,11 +195,11 @@ function gerarHTML {
 		</div>
 		<div id="content">
 			$(for i in ${ifaces[@]}; do
-				echo "<div><a href="\"${i}.html\"" title="\"Clique para mais detalhes.\""><img src="\"${i}_day.png\"" alt="\"${0##*/} --html\"" /></a></div>"
+				echo "<div><a href="\"${i}.html\"" title="\"Clique para obter mais detalhes.\""><img src="\"${i}_day.png\"" alt="\"${0##*/} --html\"" /></a></div>"
 			done)
 		</div>
 		<div id="footer">
-			<p>Copyright 2016 ~ Sandro Marcell</p>
+			<p>Copyright &copy; 2016 ~ Sandro Marcell</p>
 		</div>
 	</body>
 	</html>
@@ -250,7 +250,7 @@ function gerarHTML {
 				done)
 			</div>
 			<div id="footer">
-				<p>Copyright 2016 ~ Sandro Marcell</p>
+				<p>Copyright &copy; 2016 ~ Sandro Marcell</p>
 			</div>
 		</body>
 		</html>
