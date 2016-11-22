@@ -1,0 +1,51 @@
+Nota
+----
+ESTE PROGRAMA É DISTRIBUÍDO NA ESPERANÇA DE QUE POSSA VIR A SER ÚTIL, MAS SEM NENHUMA GARANTIA!
+
+Você é livre para modificar, melhorar ou otimizar este programa, mas peço gentilmente que mantenha os créditos originais. ;)
+
+Sobre
+-----
+O "rrd_network.sh" é um shell script que utilizando a ferramenta RRDTool, gera gráficos estatísticos diários, semanais, mensais e anuais de tráfego de rede nas interfaces monitoradas, tudo muito simples e bem funcional. 
+
+Desenvolvimento
+---------------
+Este projeto foi desenvolvido e testado no seguinte ambiente:
+
+- Linux 3.10.0-327.18.2.el7.x86_64 - CentOS Linux release 7.2.1511 (Core)
+- RRDtool 1.4.8
+- GNU bash, version 4.2.46(1)-release (x86_64-redhat-linux-gnu)
+- Browsers: Mozilla Firefox 46.0.1, Google Chrome 51.0.2704.63, Vivaldi 1.1.453.59
+			
+Instalação
+----------
+1) Edite o "rrd_network.sh" e altera as VARIÁVEIS GLOBAIS conforme necessário
+
+2) Dê permissão de execução ao script:
+
+chmod 755 rrd_network.sh
+
+3) Execute o script para gerar as bases de dados:
+
+./rrd_network.sh
+
+4) Execute novamente o script, mas agora para gerar as páginas html:
+
+./rrd_network.sh --html
+
+5) Agende no cron do usuário root a execução do mesmo de 5 em 5 min.:
+
+*/5 * * * * /caminho/para/rrd_network.sh > /dev/null 2>&1
+
+6) Finalmente acesse as páginas html geradas através dum navegador web
+
+Projetos
+--------
+Para saber mais sobre os meus projetos, acesse a minha conta no Github: https://github.com/SandroMarcell
+
+Dúvidas
+-------
+Para dúvidas ou outras informações:
+
+Email: smarcell@mail.com
+Blog: https://sanmarcell.wordpress.com
