@@ -101,7 +101,7 @@ function gerarGraficos {
 			 'year') tipo='Gráfico anual (1 dia de média)'       ;;
 		esac
 		rrdtool graph ${DIR_WWW}/${iface}_${p}.png --start -1$p --font "TITLE:0:Bold" --title "$titulo / $tipo" \
-			--lazy --watermark "${0##*/} (Gerado em $(date "+%d/%m/%Y"))" --vertical-label "Bits por segundo" \
+			--lazy --watermark "$(date "+%c")" --vertical-label "Bits por segundo" \
 			--height 124 --width 550 --lower-limit 0 --imgformat PNG \
 			--color "BACK#FFFFFF" --color "SHADEA#FFFFFF" --color "SHADEB#FFFFFF" \
 			--color "MGRID#AAAAAA" --color "GRID#CCCCCC" --color "ARROW#333333" \
