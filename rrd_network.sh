@@ -41,7 +41,7 @@ INTERVALO=$((60 * 5))
 # eth2 = Link para a DMZ
 # entao faca:
 # INTERFACES=('eth0' 'Link internet' 'eth1' 'Link LAN' 'eth2' 'Link DMZ')
-INTERFACES=('eth0' 'Link internet' 'eth1' 'Rede interna' 'eth2' 'Servidor web')
+INTERFACES=('lo' 'Loopback' 'eth0' 'Link internet')
 
 # Criando os diretorios de trabalho caso nao existam
 [ ! -d "$BASES_RRD" ] && { mkdir -p "$BASES_RRD" || exit 1; }
