@@ -239,7 +239,7 @@ function criarPaginasHTML {
 			done)
 		</div>
 		<div id="footer">
-			<p>2016 &copy; Sandro Marcell</p>
+			<p>${0##*/} &copy; 2016 Sandro Marcell</p>
 		</div>
 	</body>
 	</html>
@@ -291,7 +291,7 @@ function criarPaginasHTML {
 				done)
 			</div>
 			<div id="footer">
-				<p>2016 &copy; Sandro Marcell</p>
+				<p>${0##*/} &copy; 2016 Sandro Marcell</p>
 			</div>
 		</body>
 		</html>
