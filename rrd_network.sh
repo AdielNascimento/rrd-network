@@ -21,10 +21,10 @@ PATH='/bin:/sbin:/usr/bin:/usr/sbin'
 LC_ALL='pt_BR.UTF-8'
 
 # Diretorio onde serao armazenadas as bases de dados do rrdtool
-BASES_RRD='/var/lib/rrd'
+BD_RRD='/var/lib/rrd/rrd-network'
 
 # Diretorio no servidor web onde serao armazenados os arquivos html/png gerados
-DIR_WWW='/srv/www/htdocs/rrdnet'
+DIR_HTML='/var/www/html/rrd-network'
 
 # Gerar os graficos para os seguintes periodos de tempo
 PERIODOS='day week month year'
@@ -44,12 +44,16 @@ INTERVALO=$((60 * 5))
 INTERFACES=('lo' 'Loopback' 'eth0' 'Link internet')
 
 # Criando os diretorios de trabalho caso nao existam
-[ ! -d "$BASES_RRD" ] && { mkdir -p "$BASES_RRD" || exit 1; }
-[ ! -d "$DIR_WWW" ] && { mkdir -p "$DIR_WWW" || exit 1; }
+[ ! -d "$BD_RRD" ] && { mkdir -p "$BD_RRD" || exit 1; }
+[ ! -d "$DIR_HTML" ] && { mkdir -p "$DIR_HTML" || exit 1; }
 
 # Funcao principal que sera a responsavel geracao dos graficos
 function gerarGraficos {
 	declare -a args=("${INTERFACES[@]}")
+	declare iface=''
+	declare desc=''
+	declare rx_bytes=0
+	declare tx_bytes=0
 
 	while [ ${#args[@]} -ne 0 ]; do
 		iface="${args[0]}" # Interface a ser monitorada
@@ -59,45 +63,44 @@ function gerarGraficos {
 		# Coletando os valores recebidos/enviados pela interface
 		# Obs.: Os valores sao coletados em bytes mas ao se gerar
 		# os graficos, esses dados serao convertidos em bits
-		local rx_bytes=$(</sys/class/net/$iface/statistics/rx_bytes)
-		local tx_bytes=$(</sys/class/net/$iface/statistics/tx_bytes)
+		rx_bytes=$(</sys/class/net/$iface/statistics/rx_bytes)
+		tx_bytes=$(</sys/class/net/$iface/statistics/tx_bytes)
 
 		# Caso as bases rrd nao existam, entao serao criadas e cada uma
 		# tera o mesmo nome da interface monitorada
-		if [ ! -e "${BASES_RRD}/${iface}.rrd" ]; then
-			echo "Criando base de dados rrd: ${BASES_RRD}/${iface}.rrd"
-			rrdtool create ${BASES_RRD}/${iface}.rrd --start 0 \
-				DS:in:DERIVE:600:0:U \
-				DS:out:DERIVE:600:0:U \
-				RRA:AVERAGE:0.5:1:576 \
-				RRA:AVERAGE:0.5:6:672 \
-				RRA:AVERAGE:0.5:24:732 \
-				RRA:AVERAGE:0.5:144:1460
+		if [ ! -e "${BD_RRD}/${iface}.rrd" ]; then
+			echo "Criando base de dados rrd: ${BD_RRD}/${iface}.rrd"
+			rrdtool create ${BD_RRD}/${iface}.rrd --start 0 --step $INTERVALO \
+				DS:in:DERIVE:$((INTERVALO * 2)):0:U \
+				DS:out:DERIVE:$((INTERVALO * 2)):0:U \
+				RRA:MIN:0.5:1:1500 \
+				RRA:AVERAGE:0.5:1:1500 \
+				RRA:MAX:0.5:1:1500
 			[ $? -gt 0 ] && return 1
 		fi
 
 		# Se as bases ja existirem, entao atualize-as...
-		echo "${BASES_RRD}/${iface}.rrd: Atualizando base de dados..."
-		rrdtool update ${BASES_RRD}/${iface}.rrd -t in:out N:${rx_bytes}:$tx_bytes
+		echo "Atualizando base de dados: ${BD_RRD}/${iface}.rrd"
+		rrdtool update ${BD_RRD}/${iface}.rrd --template in:out N:${rx_bytes}:$tx_bytes
 		[ $? -gt 0 ] && return 1
 
 		# e depois gere os graficos
 		for i in $PERIODOS; do
 			case $i in
-				  'day') tipo='Gráfico diário (5 minutos de média)'  ;;
-				 'week') tipo='Gráfico semanal (30 minutos de média)';;
-				'month') tipo='Gráfico mensal (2 horas de média)'    ;;
-				 'year') tipo='Gráfico anual (1 dia de média)'       ;;
+				  'day') tipo='Média diária (5 minutos)'   ;;
+				 'week') tipo='Média semanal (30 minutos)' ;;
+				'month') tipo='Média mensal (2 horas)'     ;;
+				 'year') tipo='Média anual (1 dia)'        ;;
 			esac
 
-			rrdtool graph ${DIR_WWW}/${iface}_${i}.png --start -1$i --font "TITLE:0:Bold" --title "$desc ($iface) / $tipo" \
-				--lazy --watermark "$(date "+%c")" --vertical-label "Bits por segundo" \
-				--height 124 --width 550 --lower-limit 0 --imgformat PNG \
-				--color "BACK#FFFFFF" --color "SHADEA#FFFFFF" --color "SHADEB#FFFFFF" \
-				--color "MGRID#AAAAAA" --color "GRID#CCCCCC" --color "ARROW#333333" \
-				--color "FONT#333333" --color "AXIS#333333" --color "FRAME#333333" \
-				DEF:in_bytes=${BASES_RRD}/${iface}.rrd:in:AVERAGE \
-				DEF:out_bytes=${BASES_RRD}/${iface}.rrd:out:AVERAGE \
+			rrdtool graph ${DIR_HTML}/${iface}_${i}.png --start -1$i --font='TITLE:0:Bold' --title="$desc ($iface) / $tipo" \
+				--lazy --watermark="$(date "+%c")" --vertical-label='Bits por segundo' --slope-mode --alt-y-grid --rigid \
+				--height=124 --width=550 --lower-limit=0 --imgformat=PNG \
+				--color='BACK#FFFFFF' --color='SHADEA#FFFFFF' --color='SHADEB#FFFFFF' \
+				--color='MGRID#AAAAAA' --color='GRID#CCCCCC' --color='ARROW#333333' \
+				--color='FONT#333333' --color='AXIS#333333' --color='FRAME#333333' \
+				DEF:in_bytes=${BD_RRD}/${iface}.rrd:in:AVERAGE \
+				DEF:out_bytes=${BD_RRD}/${iface}.rrd:out:AVERAGE \
 				CDEF:in_bits=in_bytes,8,* \
 				CDEF:out_bits=out_bytes,8,* \
 				VDEF:min_in=in_bits,MINIMUM \
@@ -106,27 +109,25 @@ function gerarGraficos {
 				VDEF:max_out=out_bits,MAXIMUM \
 				VDEF:avg_in=in_bits,AVERAGE \
 				VDEF:avg_out=out_bits,AVERAGE \
-				"COMMENT:$(printf "%2s")\l" \
 				"COMMENT:$(printf "%21s")" \
 				"COMMENT:Mínimo$(printf "%7s")" \
 				"COMMENT:Máximo$(printf "%7s")" \
-				"COMMENT:Média\l" \
+				COMMENT:"Média\l" \
 				"COMMENT:$(printf "%5s")" \
 				"AREA:out_bits#FE2E2E95:Upload$(printf "%4s")" \
-				"LINE1:out_bits#FE2E2E" \
+				LINE1:out_bits#FE2E2E95 \
 				"GPRINT:min_out:%5.1lf %sbps$(printf "%3s")" \
 				"GPRINT:max_out:%5.1lf %sbps$(printf "%3s")" \
 				"GPRINT:avg_out:%5.1lf %sbps$(printf "%3s")\l" \
 				"COMMENT:$(printf "%5s")" \
 				"AREA:in_bits#2E64FE95:Download$(printf "%2s")" \
-				"LINE1:in_bits#2E64FE" \
+				LINE1:in_bits#2E64FE95 \
 				"GPRINT:min_in:%5.1lf %sbps$(printf "%3s")" \
 				"GPRINT:max_in:%5.1lf %sbps$(printf "%3s")" \
 				"GPRINT:avg_in:%5.1lf %sbps$(printf "%3s")\l" 1> /dev/null
 			[ $? -gt 0 ] && return 1
 		done
 	done
-
 	return 0
 }
 
@@ -143,16 +144,14 @@ function criarPaginasHTML {
 	echo 'Criando paginas HTML...'
 
 	# 1o: Criar a pagina index
-	cat <<- FIM > ${DIR_WWW}/index.html
+	cat <<- FIM > ${DIR_HTML}/index.html
 	<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 	<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 	<head>
 	<title>${0##*/}</title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 	<meta http-equiv="refresh" content="$INTERVALO" />
-	<meta http-equiv="cache-control" content="no-cache" />
 	<meta name="author" content="Sandro Marcell" />
 	<style type="text/css">
 		body {
@@ -219,7 +218,7 @@ function criarPaginasHTML {
 			var msg = 'Clique nos gr&aacute;ficos para ver estat&iacute;sticas mais detalhadas.';
 			var div = document.getElementById("modal");
 			if (window.sessionStorage.getItem("show-modal") != 1) {
-				div.innerHTML += '<div id="modal-box"><div class="modal-content"><a class="box-close" id="box-close"></a><h1>${0##*/}</h1><p>'+msg+'</p></div></div>';
+				div.innerHTML += '<div id="modal-box"><div class="modal-content"><a class="box-close" id="box-close"></a><h1>${0##*/}</h1><p>' + msg + '</p></div></div>';
 				document.getElementById("box-close").onclick = function() {
 					document.getElementById("modal-box").style.display = "none";
 				};
@@ -234,9 +233,11 @@ function criarPaginasHTML {
 		</div>
 		<div id="modal"></div>
 		<div id="content">
-			$(for i in ${ifaces[@]}; do
-				echo "<div><a href="\"${i}.html\"" title="\"Clique para mais detalhes.\""><img src="\"${i}_day.png\"" alt="\"${0##*/} --html\"" /></a></div>"
-			done)
+			<script type="text/javascript">
+				$(for i in ${ifaces[@]}; do
+					echo "document.write('<div><a href="\"${i}.html\"" title="\"Clique para mais detalhes.\""><img src="\"${i}_day.png?nocache=\' + Math.random\(\) + \'\"" alt="\"${0##*/} --html\"" /></a></div>');"
+				done)
+			</script>
 		</div>
 		<div id="footer">
 			<p>${0##*/} &copy; 2016 Sandro Marcell</p>
@@ -247,16 +248,14 @@ function criarPaginasHTML {
 
 	# 2o: Criar pagina especifica para cada interface com os periodos definidos
 	for i in ${ifaces[@]}; do
-		cat <<- FIM > ${DIR_WWW}/${i}.html
+		cat <<- FIM > ${DIR_HTML}/${i}.html
 		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 		<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 		<head>
 		<title>${0##*/}</title>
 		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 		<meta http-equiv="refresh" content="$INTERVALO" />
-		<meta http-equiv="cache-control" content="no-cache" />
 		<meta name="author" content="Sandro Marcell" />
 		<style type="text/css">
 			body {
@@ -286,18 +285,20 @@ function criarPaginasHTML {
 				<p>$titulo<br /><small>(Host: $(hostname))</small></p>
 			</div>
 			<div id="content">
-				$(for p in $PERIODOS; do
-					echo "<div><img src="\"${i}_${p}.png\"" alt="\"${0##*/} --html\"" /></div>"
-				done)
+				<script type="text/javascript">
+					$(for p in $PERIODOS; do
+						echo "document.write('<div><img src="\"${i}_${p}.png?nocache=\' + Math.random\(\) + \'\"" alt="\"${0##*/} --html\"" /></div>');"
+					done)
+				</script>
 			</div>
 			<div id="footer">
+				<a href="index.html">Voltar</a>
 				<p>${0##*/} &copy; 2016 Sandro Marcell</p>
 			</div>
 		</body>
 		</html>
 		FIM
 	done
-
 	return 0
 }
 
