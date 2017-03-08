@@ -69,13 +69,28 @@ function gerarGraficos {
 		# Caso as bases rrd nao existam, entao serao criadas e cada uma
 		# tera o mesmo nome da interface monitorada
 		if [ ! -e "${BD_RRD}/${iface}.rrd" ]; then
+			# Armazenar valores de acordo com os peridos definidos em $PERIODO
+			# e computados com base no intervalo de $INTERVALO
+			v30min=$((INTERVALO * 2 / 30))  # Semanal
+			v2hrs=$((INTERVALO * 2 / 120))  # Mensal
+			v1d=$((1440 / (INTERVALO * 2))) # Anual
+			
 			echo "Criando base de dados rrd: ${BD_RRD}/${iface}.rrd"
 			rrdtool create ${BD_RRD}/${iface}.rrd --start 0 --step $INTERVALO \
 				DS:in:DERIVE:$((INTERVALO * 2)):0:U \
 				DS:out:DERIVE:$((INTERVALO * 2)):0:U \
 				RRA:MIN:0.5:1:1500 \
+				RRA:MIN:0.5:$v30min:1500 \
+				RRA:MIN:0.5:$v2hrs:1500 \
+				RRA:MIN:0.5:$v1d:1500 \
 				RRA:AVERAGE:0.5:1:1500 \
-				RRA:MAX:0.5:1:1500
+				RRA:AVERAGE:0.5:$v30min:1500 \
+				RRA:AVERAGE:0.5:$v2hrs:1500 \
+				RRA:AVERAGE:0.5:$v1d:1500 \
+				RRA:MAX:0.5:1:1500 \
+				RRA:MAX:0.5:$v30min:1500 \
+				RRA:MAX:0.5:$v2hrs:1500 \
+				RRA:MAX:0.5:$v1d:1500
 			[ $? -gt 0 ] && return 1
 		fi
 
@@ -93,7 +108,7 @@ function gerarGraficos {
 				 'year') tipo='Média anual (1 dia)'        ;;
 			esac
 
-			rrdtool graph ${DIR_HTML}/${iface}_${i}.png --start -1$i --font='TITLE:0:Bold' --title="$desc ($iface) / $tipo" \
+			rrdtool graph ${DIR_HTML}/${iface}_${i}.png --base=1000 --start -1$i --font='TITLE:0:Bold' --title="$desc ($iface) / $tipo" \
 				--lazy --watermark="$(date "+%c")" --vertical-label='Bits por segundo' --slope-mode --alt-y-grid --rigid \
 				--height=124 --width=550 --lower-limit=0 --imgformat=PNG \
 				--color='BACK#FFFFFF' --color='SHADEA#FFFFFF' --color='SHADEB#FFFFFF' \
@@ -154,88 +169,21 @@ function criarPaginasHTML {
 	<meta http-equiv="refresh" content="$INTERVALO" />
 	<meta name="author" content="Sandro Marcell" />
 	<style type="text/css">
-		body {
-			margin: 0;
-			padding: 0;
-			background-color: #AFBFCB;
-			width: 100%;
-			height: 100%;
-			font: 20px/1.5em Helvetica, Arial, sans-serif;
-		}
-		a:link, a:hover, a:active {
-			text-decoration: none;
-			color: #AFBFCB;
-		}
-		#header {
-			text-align: center;
-		}
-		#content {
-			position: relative;
-			text-align: center;
-			margin: auto;
-		}
-		#footer {
-			font-size: 10px;
-			text-align: center;
-		}
-		#modal-box {
-			position: fixed;
-			font: 15px/1.5em Helvetica, Arial, sans-serif;
-			top: 0;
-			left: 0;
-			background: rgba(0, 0, 0, 0.8);
-			z-index: 99999;
-			height: 100%;
-			width: 100%;
-		}
-		.modal-content {
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			background: #FFFFFF;
-			width: 30%;
-			padding: 10px;
-		}
-		a.box-close {
-			float: right;
-			margin-top: -25px;
-			margin-right: -25px;
-			cursor: pointer;
-			color: #B22222;
-			font-size: 60px;
-			font-weight: bold;
-			display: inline-block;
-			line-height: 0px;
-			padding: 11px 3px;
-		}
-		.box-close:before {
-			content: "×";
-		}
+		body { margin: 0; padding: 0; background-color: #AFBFCB; width: 100%; height: 100%; font: 20px/1.5em Helvetica, Arial, sans-serif; }
+		a:link, a:hover, a:active { text-decoration: none; color: #AFBFCB; }
+		#header { text-align: center; }
+		#content { position: relative; text-align: center; margin: auto; }
+		#footer { font-size: 10px; text-align: center; }
 	</style>
-	<script type="text/javascript">
-		window.onload = function() {
-			var msg = 'Clique nos gr&aacute;ficos para ver estat&iacute;sticas mais detalhadas.';
-			var div = document.getElementById("modal");
-			if (window.sessionStorage.getItem("show-modal") != 1) {
-				div.innerHTML += '<div id="modal-box"><div class="modal-content"><a class="box-close" id="box-close"></a><h1>${0##*/}</h1><p>' + msg + '</p></div></div>';
-				document.getElementById("box-close").onclick = function() {
-					document.getElementById("modal-box").style.display = "none";
-				};
-				window.sessionStorage.setItem("show-modal", 1);
-			}
-		}
-	</script>
 	</head>
 	<body>
 		<div id="header">
 			<p>$titulo<br /><small>(Host: $(hostname))</small></p>
 		</div>
-		<div id="modal"></div>
 		<div id="content">
 			<script type="text/javascript">
 				$(for i in ${ifaces[@]}; do
-					echo "document.write('<div><a href="\"${i}.html\"" title="\"Clique para mais detalhes.\""><img src="\"${i}_day.png?nocache=\' + Math.random\(\) + \'\"" alt="\"${0##*/} --html\"" /></a></div>');"
+					echo "document.write('<div><a href="\"${i}.html\"" title="\"* Clique para ver mais detalhes.\""><img src="\"${i}_day.png?nocache=\' + Math.random\(\) + \'\"" alt="\"${0##*/} --html\"" /></a></div>');"
 				done)
 			</script>
 		</div>
@@ -258,26 +206,10 @@ function criarPaginasHTML {
 		<meta http-equiv="refresh" content="$INTERVALO" />
 		<meta name="author" content="Sandro Marcell" />
 		<style type="text/css">
-			body {
-				margin: 0;
-				padding: 0;
-				background-color: #AFBFCB;
-				width: 100%;
-				height: 100%;
-				font: 20px/1.5em Helvetica, Arial, sans-serif;
-			}
-			#header {
-				text-align: center;
-			}
-			#content {
-				position: relative;
-				text-align: center;
-				margin: auto;
-			}
-			#footer {
-				font-size: 10px;
-				text-align: center;
-			}
+			body { margin: 0; padding: 0; background-color: #AFBFCB; width: 100%; height: 100%; font: 20px/1.5em Helvetica, Arial, sans-serif; }
+			#header { text-align: center; }
+			#content { position: relative; text-align: center; margin: auto; }
+			#footer { font-size: 10px; text-align: center; }
 		</style>
 		</head>
 		<body>
@@ -303,12 +235,12 @@ function criarPaginasHTML {
 }
 
 # Criar os arquivos html se for o caso
-# Chamada do script: ./rrd_network.sh --html
+# Chamada do script: rrd_network.sh --html
 if [ "$1" == '--html' ]; then
 	criarPaginasHTML
 	exit 0
 fi
 
 # Coletando dados e gerando os graficos
-# Chamada do script: ./rrd_network.sh
+# Chamada do script: rrd_network.sh
 gerarGraficos
