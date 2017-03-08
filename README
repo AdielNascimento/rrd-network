@@ -19,7 +19,7 @@ Este projeto foi desenvolvido e testado no seguinte ambiente:
 			
 Instalação
 ----------
-1) Edite o "rrd_network.sh" e altera as VARIÁVEIS GLOBAIS conforme necessário
+1) Edite o "rrd_network.sh" e altere as VARIÁVEIS GLOBAIS conforme necessário
 
 2) Dê permissão de execução ao script:
 
@@ -38,8 +38,6 @@ chmod 755 rrd_network.sh
 */5 * * * * /caminho/para/rrd_network.sh > /dev/null 2>&1
 
 6) Finalmente acesse as páginas html geradas através dum navegador web:
-
-http://<IP DO SERVIDOR>/rrd-network
 
 Projetos
 --------
