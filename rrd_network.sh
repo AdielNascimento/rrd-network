@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --norc
 #
 # Copyright 2016 Sandro Marcell <smarcell@mail.com>
 #
